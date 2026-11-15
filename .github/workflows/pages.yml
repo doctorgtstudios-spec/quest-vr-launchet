@@ -25,18 +25,115 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Prepare site
+      - name: Apply Horizon-inspired UI and XR controller fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
+
           page = Path("index.html")
           html = page.read_text(encoding="utf-8")
-          tag = '<script src="./controller-tracking-fix.js"></script>'
-          if tag not in html:
-              if "</body>" not in html:
-                  raise SystemExit("index.html has no closing body tag")
-              html = html.replace("</body>", tag + "\\n</body>", 1)
-              page.write_text(html, encoding="utf-8")
+
+          def replace_once(old, new, label):
+              global html
+              count = html.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one match, found {count}")
+              html = html.replace(old, new, 1)
+
+          # New build key prevents older saved layout preferences from overriding the refreshed defaults.
+          replace_once("const BUILD = 'v0.1.0';", "const BUILD = 'v0.2.0';", "build version")
+
+          # Dark, neutral, high-contrast surfaces and the familiar Horizon-style blue accent.
+          replace_once(
+              "dark:     { panel: '#1c2b33', panel2: '#17323d', ink: '#eaf6fb', ink2: '#9fbdc9', line: '#2c4c5c', accent: '#0064e0', accent2: '#31a9ff', ok: '#31c48d', warn: '#e2a33b', bad: '#e5484d', scrim: 'rgba(8,20,27,0.92)' },",
+              "dark:     { panel: '#24262a', panel2: '#1c1e22', ink: '#f5f6f7', ink2: '#b8bdc5', line: '#3b3f46', accent: '#1877f2', accent2: '#55a7ff', ok: '#31c48d', warn: '#e2a33b', bad: '#e5484d', scrim: 'rgba(20,21,24,0.94)' },",
+              "dark theme"
+          )
+          replace_once(
+              "dim:      { panel: '#131f26', panel2: '#0f1a20', ink: '#cfe4ec', ink2: '#7fa3b1', line: '#223d49', accent: '#0a5cb8', accent2: '#2b8fd6', ok: '#2aa877', warn: '#c8902f', bad: '#c93f44', scrim: 'rgba(5,13,18,0.94)' },",
+              "dim:      { panel: '#17191d', panel2: '#111317', ink: '#e5e7eb', ink2: '#a0a6af', line: '#30343b', accent: '#176bd6', accent2: '#438fe8', ok: '#2aa877', warn: '#c8902f', bad: '#c93f44', scrim: 'rgba(8,9,11,0.96)' },",
+              "dim theme"
+          )
+          replace_once(
+              "uiDistance: 1.15, dockWidth: 0.66, dockHeight: 0.098, dockPitchDeg: -7, dockY: -0.10,",
+              "uiDistance: 1.15, dockWidth: 0.76, dockHeight: 0.11, dockPitchDeg: -5, dockY: -0.10,",
+              "dock sizing"
+          )
+          replace_once(
+              "panel: null, group: null, rows: 1, cols: 9, page: 0, pages: 1,",
+              "panel: null, group: null, rows: 1, cols: 8, page: 0, pages: 1,",
+              "dock app layout"
+          )
+
+          # Refresh the browser landing surface without changing the in-headset app flow.
+          replace_once(
+              "--pbg:#1c2b33; --pbg2:#17323d; --bg:#0b1a22; --ink:#eaf6fb; --ink2:#9fbdc9;\n    --q-prim:#0064e0; --q-hi:#31a9ff; --line:#274553;",
+              "--pbg:#24262a; --pbg2:#1c1e22; --bg:#0d0f12; --ink:#f5f6f7; --ink2:#b8bdc5;\n    --q-prim:#1877f2; --q-hi:#55a7ff; --line:#3b3f46;",
+              "landing palette"
+          )
+          replace_once(
+              "background:var(--bg);color:var(--ink);",
+              "background:radial-gradient(ellipse at 50% 12%,#242832 0%,#111318 54%,#090a0c 100%);color:var(--ink);",
+              "landing background"
+          )
+          replace_once(
+              ".card{width:min(760px,100%);background:linear-gradient(180deg,var(--pbg),var(--pbg2));\n    border:1px solid var(--line);border-radius:var(--r-panel);padding:22px;box-shadow:0 18px 60px #0008}",
+              ".card{width:min(760px,100%);background:linear-gradient(160deg,#292c32f5,#1b1d22f5);\n    border:1px solid #ffffff20;border-radius:28px;padding:28px;box-shadow:0 24px 80px #000a;backdrop-filter:blur(24px)}",
+              "landing card"
+          )
+          replace_once(
+              "background:var(--q-prim);color:#fff}",
+              "background:var(--q-prim);color:#fff;border-radius:999px;min-height:48px;padding:12px 22px;transition:background .16s ease,transform .16s ease}",
+              "primary button"
+          )
+          replace_once(
+              "button.ghost{background:#ffffff14;color:var(--ink);border:1px solid var(--line)}",
+              "button.ghost{background:#ffffff0d;color:var(--ink);border:1px solid #ffffff24;border-radius:999px}\n  button:active{transform:scale(.98)}",
+              "secondary buttons"
+          )
+
+          # Use the real WebXR targetRaySpace for the pointer beam, not the grip-space model.
+          replace_once(
+              "const geo = new THREE.PlaneGeometry(0.012, 1, 1, 8);",
+              "const geo = new THREE.PlaneGeometry(0.004, 1, 1, 8);",
+              "pointer beam width"
+          )
+          replace_once(
+              "h.laserPivot.add(h.laser);",
+              "h.rayObj.add(h.laser);\n    h.laser.position.set(0, 0, 0);",
+              "target-ray pointer parent"
+          )
+          replace_once(
+              "new THREE.MeshBasicMaterial({ map: lt, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false })",
+              "new THREE.MeshBasicMaterial({ map: lt, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, toneMapped: false, fog: false })",
+              "pointer visibility"
+          )
+
+          # Quest's xr-standard Gamepad mapping places the thumbstick on axes 2 and 3.
+          replace_once(
+              "out.sx = A[sa[0]] || 0; out.sy = A[sa[1]] || 0;",
+              "const stickAxes = gp.mapping === 'xr-standard' && A.length >= 4 ? [2, 3] : sa;\n  out.sx = A[stickAxes[0]] || 0; out.sy = A[stickAxes[1]] || 0;",
+              "XR thumbstick axes"
+          )
+
+          # Each controller's beam ends at its own nearest panel hit, while the nearest overall hit still wins focus.
+          replace_once(
+              "R.pointers.push({ h, ray });\n    for (let i = 0; i < panels.length; i++) {",
+              "R.pointers.push({ h, ray });\n    let own = null;\n    for (let i = 0; i < panels.length; i++) {",
+              "per-controller hit tracking"
+          )
+          replace_once(
+              "const score = hit.dist - (panels[i].win ? 0 : 0.02) - (preferred ? 0 : 0.05);\n      if (!best || score < best.score) best = { score, hit, win: panels[i].win, h, panel: panels[i].panel };",
+              "const score = hit.dist - (panels[i].win ? 0 : 0.02) - (preferred ? 0 : 0.05);\n      const candidate = { score, hit, win: panels[i].win, h, panel: panels[i].panel };\n      if (!own || score < own.score) own = candidate;\n      if (!best || score < best.score) best = candidate;",
+              "nearest panel selection"
+          )
+          replace_once(
+              "const to = best ? best.hit.dist : 3.0;",
+              "const to = own ? own.hit.dist : 3.0;",
+              "beam length"
+          )
+
+          page.write_text(html, encoding="utf-8")
           PY
           touch .nojekyll
       - name: Upload site
