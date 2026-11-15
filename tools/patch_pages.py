@@ -136,4 +136,19 @@ replace_once("""    if (model) model.visible = !CTRL.displayMode;
     if (h.fallback) h.fallback.visible = !model || !model.visible;
     animateRig(CTRL.sides[h.side], h.input, h.prev, dt, h);""", 'fallback visibility')
 
+# WebXR's xr-standard layout exposes the thumbstick at axes 2 and 3.
+replace_once(
+    "out.sx = A[sa[0]] || 0; out.sy = A[sa[1]] || 0;",
+    "const stickAxes = gp.mapping === 'xr-standard' && A.length >= 4 ? [2, 3] : sa;\\n  out.sx = A[stickAxes[0]] || 0; out.sy = A[stickAxes[1]] || 0;",
+    'Quest thumbstick axes'
+)
+
+# The controller beam is a plane rotated into the target-ray direction (-Z).
+replace_once("const geo = new THREE.PlaneGeometry(0.012, 1, 1, 8);",
+             "const geo = new THREE.PlaneGeometry(0.004, 1, 1, 8);", 'pointer beam width')
+replace_once("h.laser.rotation.x = -Math.PI / 2;",
+             "h.laser.rotation.x = Math.PI / 2;", 'forward pointer direction')
+replace_once("depthWrite: false, toneMapped: false, fog: false }));",
+             "depthWrite: false, depthTest: false, toneMapped: false, fog: false }));", 'pointer visibility')
+
 page.write_text(html, encoding='utf-8')
