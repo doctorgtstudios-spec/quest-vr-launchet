@@ -139,7 +139,7 @@ replace_once("""    if (model) model.visible = !CTRL.displayMode;
 # WebXR's xr-standard layout exposes the thumbstick at axes 2 and 3.
 replace_once(
     "out.sx = A[sa[0]] || 0; out.sy = A[sa[1]] || 0;",
-    "const stickAxes = gp.mapping === 'xr-standard' && A.length >= 4 ? [2, 3] : sa;\\n  out.sx = A[stickAxes[0]] || 0; out.sy = A[stickAxes[1]] || 0;",
+    "const stickAxes = gp.mapping === 'xr-standard' && A.length >= 4 ? [2, 3] : sa; out.sx = A[stickAxes[0]] || 0; out.sy = A[stickAxes[1]] || 0;",
     'Quest thumbstick axes'
 )
 
