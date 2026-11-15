@@ -146,9 +146,13 @@ replace_once(
 # The controller beam is a plane rotated into the target-ray direction (-Z).
 replace_once("const geo = new THREE.PlaneGeometry(0.012, 1, 1, 8);",
              "const geo = new THREE.PlaneGeometry(0.004, 1, 1, 8);", 'pointer beam width')
-replace_once("h.laser.rotation.x = -Math.PI / 2;",
-             "h.laser.rotation.x = Math.PI / 2;", 'forward pointer direction')
 replace_once("depthWrite: false, toneMapped: false, fog: false }));",
              "depthWrite: false, depthTest: false, toneMapped: false, fog: false }));", 'pointer visibility')
+
+audio_tag = '<script src="./quest-ui-audio.js"></script>'
+if audio_tag not in html:
+    if '</body>' not in html:
+        raise SystemExit('Patch failed: index.html has no closing body tag')
+    html = html.replace('</body>', audio_tag + '\n</body>', 1)
 
 page.write_text(html, encoding='utf-8')
