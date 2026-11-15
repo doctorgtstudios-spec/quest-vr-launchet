@@ -117,8 +117,8 @@ replace_once("""    let preferred = S.handedness === 'both' || S.handedness === 
       } else h.reticle.visible = false;
     }""", 'per-hand ray endpoints')
 
-replace_once("""    h.holder.add(h.laserPivot);
-    h.gripObj.add(h.holder);
+replace_once("""    h.gripObj.add(h.holder);
+    h.rayObj.add(h.laserPivot);
     // laser: a tapered quad pointing along -Z of targetRaySpace""", """    h.gripObj.add(h.holder);
     h.rayObj.add(h.laserPivot);
     const fallback = new THREE.Group();
