@@ -33,11 +33,11 @@ jobs:
           page = Path("index.html")
           html = page.read_text(encoding="utf-8")
 
-          def replace_once(old, new, label):
+          def replace_once(old, new, label, expected=1):
               global html
               count = html.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected one match, found {count}")
+              if count != expected:
+                  raise SystemExit(f"{label}: expected {expected} matches, found {count}")
               html = html.replace(old, new, 1)
 
           # New build key prevents older saved layout preferences from overriding the refreshed defaults.
@@ -101,7 +101,7 @@ jobs:
           replace_once(
               "h.laserPivot.add(h.laser);",
               "h.rayObj.add(h.laser);\n    h.laser.position.set(0, 0, 0);",
-              "target-ray pointer parent"
+              "target-ray pointer parent", 2
           )
           replace_once(
               "new THREE.MeshBasicMaterial({ map: lt, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false })",
